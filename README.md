@@ -215,7 +215,7 @@ env GOOS=linux GOARCH=amd64 go build main.go
 
 ```bash
 # Installation dependencies
-npm install   # or cnpm install
+npm install --prefix ./  # or cnpm install
 
 # Start service
 npm run dev
