@@ -17,22 +17,6 @@ export function getMenu(menuId) {
   })
 }
 
-// 查询菜单下拉树结构
-// export function treeselect() {
-//   return request({
-//     url: '/api/v1/menuTreeselect',
-//     method: 'get'
-//   })
-// }
-
-// 根据角色ID查询菜单下拉树结构
-export function roleMenuTreeselect(roleId) {
-  return request({
-    url: '/api/v1/roleMenuTreeselect/' + roleId,
-    method: 'get'
-  })
-}
-
 // 新增菜单
 export function addMenu(data) {
   return request({
@@ -57,5 +41,13 @@ export function delMenu(data) {
     url: '/api/v1/menu',
     method: 'delete',
     data: data
+  })
+}
+
+// 获取当前菜单
+export function getRoutes() {
+  return request({
+    url: '/api/v1/menurole',
+    method: 'get'
   })
 }

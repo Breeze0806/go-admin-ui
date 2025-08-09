@@ -84,17 +84,6 @@
               >删除
               </el-button>
             </el-col>
-            <el-col :span="1.5">
-              <el-button
-                v-permisaction="['job:sysJob:log']"
-                type="danger"
-                icon="el-icon-delete"
-                size="mini"
-                @click="handleLog"
-              >日志
-              </el-button>
-
-            </el-col>
           </el-row>
 
           <el-table v-loading="loading" :data="sysjobList" @selection-change="handleSelectionChange">
@@ -549,9 +538,6 @@ export default {
           this.msgError(response.msg)
         }
       }).catch(function() {})
-    },
-    handleLog() {
-      this.$router.push({ name: 'job_log', params: { }})
     }
   }
 }

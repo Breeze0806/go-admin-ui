@@ -48,52 +48,6 @@
             </template>
           </el-table-column>
           <el-table-column prop="sort" label="排序" width="60px" />
-          <el-table-column prop="permission" label="权限标识" :show-overflow-tooltip="true">
-            <template slot-scope="scope">
-              <el-popover v-if="scope.row.sysApi.length>0" trigger="hover" placement="top">
-                <el-table
-                  :data="scope.row.sysApi"
-                  border
-                  style="width: 100%"
-                >
-                  <el-table-column
-                    prop="title"
-                    label="title"
-                    width="260px"
-                  >
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.type=='SYS' && scope.row.title!=''"><el-tag type="success">{{ '['+scope.row.type +'] '+ scope.row.title }}</el-tag></span>
-                      <span v-if="scope.row.type!='SYS' && scope.row.title!=''"><el-tag type="">{{ '['+scope.row.type +'] '+scope.row.title }}</el-tag></span>
-                      <span v-if="scope.row.title==''"><el-tag type="danger">暂无</el-tag></span>
-
-                    </template>
-                  </el-table-column>
-                  <el-table-column
-                    prop="path"
-                    label="path"
-                    width="270px"
-                  >
-                    <template slot-scope="scope">
-                      <el-tag v-if="scope.row.action=='GET'">{{ scope.row.action }}</el-tag>
-                      <el-tag v-if="scope.row.action=='POST'" type="success">{{ scope.row.action }}</el-tag>
-                      <el-tag v-if="scope.row.action=='PUT'" type="warning">{{ scope.row.action }}</el-tag>
-                      <el-tag v-if="scope.row.action=='DELETE'" type="danger">{{ scope.row.action }}</el-tag>
-                      {{ scope.row.path }}
-                    </template>
-                  </el-table-column>
-
-                </el-table>
-                <div slot="reference" class="name-wrapper">
-                  <span v-if="scope.row.permission==''">-</span>
-                  <span v-else>{{ scope.row.permission }}</span>
-                </div>
-              </el-popover>
-              <span v-else>
-                <span v-if="scope.row.permission==''">-</span>
-                <span v-else>{{ scope.row.permission }}</span>
-              </span>
-            </template>
-          </el-table-column>
           <el-table-column prop="path" label="组件路径" :show-overflow-tooltip="true">
             <template slot-scope="scope">
               <span v-if="scope.row.menuType=='A'">{{ scope.row.path }}</span>
@@ -282,17 +236,6 @@
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item v-if="form.menuType == 'F' || form.menuType == 'C'">
-                    <span slot="label">
-                      权限标识
-                      <el-tooltip content="前端权限控制按钮是否显示" placement="top">
-                        <i class="el-icon-question" />
-                      </el-tooltip>
-                    </span>
-                    <el-input v-model="form.permission" placeholder="请权限标识" maxlength="50" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
                   <el-form-item v-if="form.menuType != 'F'">
                     <span slot="label">
                       菜单状态
@@ -307,36 +250,6 @@
                         :label="dict.value"
                       >{{ dict.label }}</el-radio>
                     </el-radio-group>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="24">
-                  <el-form-item v-if="form.menuType == 'F' || form.menuType == 'C'">
-                    <span slot="label">
-                      api权限
-                      <el-tooltip content="配置在这个才做上需要使用到的接口，否则在设置用户角色时，接口将无权访问。" placement="top">
-                        <i class="el-icon-question" />
-                      </el-tooltip>
-                    </span>
-                    <el-transfer
-                      v-model="form.apis"
-                      style="text-align: left; display: inline-block"
-                      filterable
-                      :props="{
-                        key: 'id',
-                        label: 'title'
-                      }"
-                      :titles="['未授权', '已授权']"
-                      :button-texts="['收回', '授权 ']"
-                      :format="{
-                        noChecked: '${total}',
-                        hasChecked: '${checked}/${total}'
-                      }"
-                      class="panel"
-                      :data="sysapiList"
-                      @change="handleChange"
-                    >
-                      <span slot-scope="{ option }">{{ option.title }}</span>
-                    </el-transfer>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -355,7 +268,6 @@
 
 <script>
 import { listMenu, getMenu, delMenu, addMenu, updateMenu } from '@/api/admin/sys-menu'
-import { listSysApi } from '@/api/admin/sys-api'
 
 import Treeselect from '@riophae/vue-treeselect'
 import '@riophae/vue-treeselect/dist/vue-treeselect.css'
@@ -370,7 +282,6 @@ export default {
       loading: true,
       // 菜单表格树数据
       menuList: [],
-      sysapiList: [],
       // 菜单树选项
       menuOptions: [],
       // 弹出层标题
@@ -385,10 +296,7 @@ export default {
         visible: undefined
       },
       // 表单参数
-      form: {
-        apis: [],
-        sysApi: []
-      },
+      form: {},
       // 表单校验
       rules: {
         title: [{ required: true, message: '菜单标题不能为空', trigger: 'blur' }],
@@ -399,69 +307,11 @@ export default {
   created() {
     this.getList()
 
-    this.getApiList()
     this.getDicts('sys_show_hide').then(response => {
       this.visibleOptions = response.data
     })
   },
   methods: {
-    handleChange(value, direction, movedKeys) {
-      console.log(value, direction, movedKeys)
-      const list = this.form.sysApi
-      this.form.apis = value
-      if (direction === 'right') {
-        for (let x = 0; x < movedKeys.length; x++) {
-          for (let index = 0; index < this.sysapiList.length; index++) {
-            const element = this.sysapiList[index]
-            if (element.id === movedKeys[x]) {
-              list.push(element)
-              break
-            }
-          }
-        }
-        this.form.sysApi = list
-      } else if (direction === 'left') {
-        const l = []
-        for (let index = 0; index < movedKeys.length; index++) {
-          const element = movedKeys[index]
-          for (let x = 0; x < list.length; x++) {
-            const e = list[x]
-            if (element !== e.id) {
-              l.push()
-              break
-            }
-          }
-        }
-        this.form.sysApi = l
-      }
-      // this.setApis(this.form.SysApi)
-      console.log(this.form.sysApi)
-    },
-    getApiList() {
-      this.loading = true
-      listSysApi({ 'pageSize': 10000, 'type': 'BUS' }).then(response => {
-        this.sysapiList = response.data.list
-        this.loading = false
-      }
-      )
-    },
-    handleClose(done) {
-      // if (this.loading) {
-      //   return
-      // }
-      // this.$confirm('需要提交表单吗？')
-      //   .then(_ => {
-      //     this.loading = true
-      //     this.timer = setTimeout(() => {
-      //       done()
-      //       // 动画关闭需要一定的时间
-      //       setTimeout(() => {
-      //         this.loading = false
-      //       }, 400)
-      //     }, 1000)
-      //   })
-      //   .catch(_ => {})
-    },
     // 选择图标
     selected(name) {
       this.form.icon = name

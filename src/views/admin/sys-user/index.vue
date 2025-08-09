@@ -3,30 +3,6 @@
     <template #wrapper>
       <el-card class="box-card">
         <el-row :gutter="20">
-          <!--部门数据-->
-          <el-col :span="4" :xs="24">
-            <div class="head-container">
-              <el-input
-                v-model="deptName"
-                placeholder="请输入部门名称"
-                clearable
-                size="small"
-                prefix-icon="el-icon-search"
-                style="margin-bottom: 20px"
-              />
-            </div>
-            <div class="head-container">
-              <el-tree
-                ref="tree"
-                :data="deptOptions"
-                :props="defaultProps"
-                :expand-on-click-node="false"
-                :filter-node-method="filterNode"
-                default-expand-all
-                @node-click="handleNodeClick"
-              />
-            </div>
-          </el-col>
           <!--用户数据-->
           <el-col :span="20" :xs="24">
             <el-form ref="queryForm" :model="queryParams" :inline="true" label-width="68px">
@@ -115,7 +91,6 @@
               <el-table-column label="编号" width="75" prop="userId" sortable="custom" />
               <el-table-column label="登录名" width="105" prop="username" sortable="custom" :show-overflow-tooltip="true" />
               <el-table-column label="昵称" prop="nickName" :show-overflow-tooltip="true" />
-              <el-table-column label="部门" prop="dept.deptName" :show-overflow-tooltip="true" />
               <el-table-column label="手机号" prop="phone" width="108" />
               <el-table-column label="状态" width="80" sortable="custom">
                 <template slot-scope="scope">
@@ -191,15 +166,6 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="归属部门" prop="deptId">
-                <treeselect
-                  v-model="form.deptId"
-                  :options="deptOptions"
-                  placeholder="请选择归属部门"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
               <el-form-item label="手机号码" prop="phone">
                 <el-input v-model="form.phone" placeholder="请输入手机号码" maxlength="11" />
               </el-form-item>
@@ -243,32 +209,6 @@
               </el-form-item>
             </el-col>
 
-            <el-col :span="12">
-              <el-form-item label="岗位">
-                <el-select v-model="form.postId" placeholder="请选择" @change="$forceUpdate()">
-                  <el-option
-                    v-for="item in postOptions"
-                    :key="item.postId"
-                    :label="item.postName"
-                    :value="item.postId"
-                    :disabled="item.status == 1"
-                  />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="角色">
-                <el-select v-model="form.roleId" placeholder="请选择" @change="$forceUpdate()">
-                  <el-option
-                    v-for="item in roleOptions"
-                    :key="item.roleId"
-                    :label="item.roleName"
-                    :value="item.roleId"
-                    :disabled="item.status == 1"
-                  />
-                </el-select>
-              </el-form-item>
-            </el-col>
             <el-col :span="24">
               <el-form-item label="备注">
                 <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
@@ -319,16 +259,8 @@
 import { listUser, getUser, delUser, addUser, updateUser, exportUser, resetUserPwd, changeUserStatus, importTemplate } from '@/api/admin/sys-user'
 import { getToken } from '@/utils/auth'
 
-import { listPost } from '@/api/admin/sys-post'
-import { listRole } from '@/api/admin/sys-role'
-import { treeselect } from '@/api/admin/sys-dept'
-
-import Treeselect from '@riophae/vue-treeselect'
-import '@riophae/vue-treeselect/dist/vue-treeselect.css'
-
 export default {
   name: 'SysUserManage',
-  components: { Treeselect },
   data() {
     return {
       // 遮罩层
@@ -345,8 +277,6 @@ export default {
       userList: null,
       // 弹出层标题
       title: '',
-      // 部门树选项
-      deptOptions: undefined,
       // 是否显示弹出层
       open: false,
       // 部门名称
@@ -359,10 +289,6 @@ export default {
       statusOptions: [],
       // 性别状态字典
       sexOptions: [],
-      // 岗位选项
-      postOptions: [],
-      // 角色选项
-      roleOptions: [],
       // 表单参数
       form: {},
       defaultProps: {
@@ -418,7 +344,6 @@ export default {
   },
   created() {
     this.getList()
-    this.getTreeselect()
     this.getDicts('sys_normal_disable').then(response => {
       this.statusOptions = response.data
     })
@@ -439,22 +364,6 @@ export default {
         this.loading = false
       }
       )
-    },
-    /** 查询部门下拉树结构 */
-    getTreeselect() {
-      treeselect().then(response => {
-        this.deptOptions = response.data
-      })
-    },
-    // 筛选节点
-    filterNode(value, data) {
-      if (!value) return true
-      return data.label.indexOf(value) !== -1
-    },
-    // 节点单击事件
-    handleNodeClick(data) {
-      this.queryParams.deptId = '/' + data.id + '/'
-      this.getList()
     },
     /** 转换菜单数据结构 */
     normalizer(node) {
@@ -544,14 +453,6 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset()
-      this.getTreeselect()
-
-      listPost({ pageSize: 1000 }).then(response => {
-        this.postOptions = response.data.list
-      })
-      listRole({ pageSize: 1000 }).then(response => {
-        this.roleOptions = response.data.list
-      })
       this.open = true
       this.title = '添加用户'
       this.form.password = this.initPassword
@@ -566,12 +467,6 @@ export default {
         this.open = true
         this.title = '修改用户'
         this.form.password = ''
-      })
-      listPost({ pageSize: 1000 }).then(response => {
-        this.postOptions = response.data.list
-      })
-      listRole({ pageSize: 1000 }).then(response => {
-        this.roleOptions = response.data.list
       })
     },
     /** 重置密码按钮操作 */
